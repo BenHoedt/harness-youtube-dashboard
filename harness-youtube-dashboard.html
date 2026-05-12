@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Harness · YouTube & SEO/GEO Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f5f6fa;
+    --surface:  #ffffff;
+    --border:   #e3e6f0;
+    --text:     #0f172a;
+    --muted:    #64748b;
+    --hint:     #94a3b8;
+    --brand:    #2563eb;
+    --brand-lt: #eff6ff;
+    --green:    #059669;
+    --green-lt: #ecfdf5;
+    --amber:    #b45309;
+    --amber-lt: #fffbeb;
+    --red:      #dc2626;
+    --red-lt:   #fef2f2;
+    --purple:   #7c3aed;
+    --purple-lt:#f5f3ff;
+    --r:        10px;
+    --r-lg:     14px;
+  }
+
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ─── Setup screen ─── */
+  #setup {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+  }
+  .setup-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-lg); padding: 40px; max-width: 520px; width: 100%;
+  }
+  .setup-card h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .setup-card p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+  .steps { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .steps li { margin-bottom: 8px; padding-left: 4px; }
+  .steps a { color: var(--brand); }
+  .field-label { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; display: block; }
+  .field-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .field-row input {
+    flex: 1; padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: var(--r); font-family: 'DM Mono', monospace; font-size: 13px;
+    background: var(--bg); color: var(--text); outline: none;
+  }
+  .field-row input:focus { border-color: var(--brand); }
+  .btn {
+    padding: 10px 20px; border-radius: var(--r); border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+    background: var(--brand); color: #fff; white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn-sm { padding: 7px 14px; font-size: 13px; background: var(--surface); color: var(--muted); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .btn-sm:hover { background: var(--bg); }
+  .error { color: var(--red); font-size: 13px; margin-top: 8px; display: none; }
+
+  /* ─── Dashboard ─── */
+  #dashboard { display: none; max-width: 1160px; margin: 0 auto; padding: 28px 24px 64px; }
+
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; gap: 12px; flex-wrap: wrap; }
+  .topbar-title { font-size: 20px; font-weight: 600; }
+  .topbar-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+  .source-pill {
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    padding: 3px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .source-live { background: var(--green-lt); color: var(--green); }
+  .source-mock { background: var(--amber-lt); color: var(--amber); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
+  .dot-pulse { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .section-hd {
+    display: flex; align-items: center; gap: 8px;
+    margin: 32px 0 12px; font-size: 11px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  .section-hd-icon { font-size: 16px; }
+
+  .grid { display: grid; gap: 10px; }
+  .grid-8 { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .grid-6 { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .grid-2 { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--r-lg); padding: 16px 18px;
+  }
+  .card-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; }
+
+  .metric-lbl { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .metric-val { font-size: 22px; font-weight: 500; line-height: 1.2; }
+  .metric-delta { font-size: 12px; margin-top: 4px; }
+  .up { color: var(--green); } .dn { color: var(--red); } .fl { color: var(--hint); }
+
+  .chart-wrap { position: relative; }
+
+  .kw-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; }
+  .kw-name { flex: 1; color: var(--text); }
+  .kw-rank { width: 30px; text-align: right; font-weight: 500; }
+  .kw-chg  { width: 26px; text-align: right; font-size: 12px; }
+
+  .score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; }
+  .score-name { width: 145px; font-size: 12px; color: var(--muted); flex-shrink: 0; }
+  .score-track { flex: 1; height: 7px; border-radius: 4px; background: var(--bg); overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 4px; }
+  .score-num { width: 28px; text-align: right; font-weight: 500; font-size: 13px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 6px 10px; font-size: 11px; color: var(--hint); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; border-bottom: 0.5px solid var(--border); }
+  td { padding: 9px 10px; border-bottom: 0.5px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+
+  .pill { font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 500; display: inline-block; }
+  .pill-g { background: var(--green-lt); color: var(--green); }
+  .pill-a { background: var(--amber-lt); color: var(--amber); }
+  .pill-r { background: var(--red-lt); color: var(--red); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; display: inline-block; }
+
+  .footer { margin-top: 40px; font-size: 12px; color: var(--hint); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: spin .6s linear infinite; display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #error-banner { display: none; background: var(--red-lt); border: 1px solid #fca5a5; color: var(--red); border-radius: var(--r); padding: 12px 16px; font-size: 13px; margin-bottom: 16px; }
+
+  @media (max-width: 640px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    #dashboard { padding: 16px 14px 48px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP SCREEN ══════════════════════════════════ -->
+<div id="setup">
+  <div class="setup-card">
+    <h1>Harness · YouTube Dashboard</h1>
+    <p>Enter your YouTube Data API key and Channel ID to load the dashboard. These are saved in your browser only — never sent anywhere except directly to Google's API.</p>
+
+    <ol class="steps">
+      <li>Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → create a project</li>
+      <li>Enable <strong>YouTube Data API v3</strong></li>
+      <li>Create credentials → <strong>API Key</strong> (restrict it to YouTube Data API)</li>
+      <li>Find your Channel ID in YouTube Studio → Settings → Channel → Advanced</li>
+    </ol>
+
+    <label class="field-label">YouTube Data API Key</label>
+    <div class="field-row">
+      <input id="inp-key" type="password" placeholder="AIzaSy…" autocomplete="off" />
+    </div>
+
+    <label class="field-label">Channel ID</label>
+    <div class="field-row">
+      <input id="inp-channel" type="text" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+      <button class="btn" onclick="startDashboard()">Load →</button>
+    </div>
+
+    <p class="error" id="setup-error"></p>
+
+    <p style="font-size:12px; color:var(--hint); margin-top:16px;">
+      Your credentials are saved in <code>localStorage</code> so you only enter them once per browser. To reset, click the ⚙ button in the dashboard.
+    </p>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══════════════════════════════════════ -->
+<div id="dashboard">
+
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Harness · YouTube &amp; SEO/GEO</div>
+      <div class="topbar-sub" id="last-updated">Loading…</div>
+    </div>
+    <div class="topbar-actions">
+      <div class="spinner" id="spinner"></div>
+      <span class="source-pill source-live"><span class="dot dot-pulse"></span>YouTube live</span>
+      <span class="source-pill source-mock">SEO/GEO mock</span>
+      <button class="btn-sm" onclick="loadData()">↻ Refresh</button>
+      <button class="btn-sm" onclick="resetCreds()" title="Change credentials">⚙</button>
+    </div>
+  </div>
+
+  <div id="error-banner"></div>
+
+  <!-- ── YouTube metrics ── -->
+  <div class="section-hd"><span class="section-hd-icon">▶</span> YouTube performance · last 28 days</div>
+  <div class="grid grid-8" id="yt-cards"></div>
+
+  <div class="card" style="margin-top:10px;">
+    <div class="card-title">Daily views — last 28 days</div>
+    <div class="legend">
+      <span><span class="legend-sq" style="background:#2563eb"></span>Views</span>
+    </div>
+    <div class="chart-wrap" style="height:200px;">
+      <canvas id="chart-views" role="img" aria-label="Daily views over 28 days"></canvas>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:10px;">
+    <div class="card-title">Top 5 videos · last 28 days</div>
+    <div style="overflow-x:auto;">
+      <table id="top-videos-table">
+        <thead><tr><th>#</th><th>Title</th><th style="text-align:right">Views</th><th style="text-align:right">Likes</th><th style="text-align:right">Comments</th></tr></thead>
+        <tbody id="top-videos-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── SEO ── -->
+  <div class="section-hd"><span class="section-hd-icon">🔍</span> SEO impact <span class="source-pill source-mock" style="margin-left:4px;font-size:10px;">mock data — connect Semrush/GSC to make live</span></div>
+  <div class="grid grid-6" id="seo-cards"></div>
+
+  <div class="grid grid-2" style="margin-top:10px;">
+    <div class="card">
+      <div class="card-title">Keyword rankings</div>
+      <div id="kw-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">SERP feature types won</div>
+      <div class="chart-wrap" style="height:180px;">
+        <canvas id="chart-serp" role="img" aria-label="SERP feature breakdown donut chart"></canvas>
+      </div>
+      <div class="legend" style="margin-top:10px;" id="serp-legend"></div>
+    </div>
+  </div>
+
+  <!-- ── GEO ── -->
+  <div class="section-hd"><span class="section-hd-icon">🤖</span> GEO — generative engine optimization <span class="source-pill source-mock" style="margin-left:4px;font-size:10px;">mock data — connect Profound/Goodie to make live</span></div>
+  <div class="grid grid-6" id="geo-cards"></div>
+
+  <div class="grid grid-2" style="margin-top:10px;">
+    <div class="card">
+      <div class="card-title">GEO score breakdown</div>
+      <div id="geo-scores"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Citations by AI platform</div>
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="chart-geo" role="img" aria-label="AI platform citations bar chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:10px;">
+    <div class="card-title">Queries where Harness appears in AI answers</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Query</th><th>Platform</th><th>Position</th><th>Trend</th><th>Video cited?</th></tr></thead>
+        <tbody id="geo-queries"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Harness YouTube × SEO/GEO Dashboard · Data from YouTube Data API v3</span>
+    <span id="footer-time"></span>
+  </div>
+</div>
+
+<script>
+// ─── Helpers ────────────────────────────────────────────────
+const $ = id => document.getElementById(id)
+const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : String(n)
+const secToMs = s => { const m = Math.floor(s/60), ss = s%60; return `${m}:${String(ss).padStart(2,'0')}` }
+const COLORS = ['#2563eb','#059669','#b45309','#7c3aed','#dc2626']
+
+let chartViews, chartSerp, chartGeo
+
+function destroyChart(c) { if (c) { try { c.destroy() } catch(e){} } }
+
+// ─── Credentials ─────────────────────────────────────────────
+function getCreds() {
+  return {
+    key: localStorage.getItem('yt_api_key') || '',
+    channelId: localStorage.getItem('yt_channel_id') || '',
+  }
+}
+function saveCreds(key, channelId) {
+  localStorage.setItem('yt_api_key', key)
+  localStorage.setItem('yt_channel_id', channelId)
+}
+function resetCreds() {
+  localStorage.removeItem('yt_api_key')
+  localStorage.removeItem('yt_channel_id')
+  $('dashboard').style.display = 'none'
+  $('setup').style.display = 'flex'
+}
+
+async function startDashboard() {
+  const key = $('inp-key').value.trim()
+  const channelId = $('inp-channel').value.trim()
+  if (!key || !channelId) { showSetupError('Please enter both fields.'); return }
+  saveCreds(key, channelId)
+  $('setup').style.display = 'none'
+  $('dashboard').style.display = 'block'
+  await loadData()
+}
+
+function showSetupError(msg) {
+  $('setup-error').textContent = msg
+  $('setup-error').style.display = 'block'
+}
+
+// ─── YouTube API ─────────────────────────────────────────────
+const YT = 'https://www.googleapis.com/youtube/v3'
+
+async function ytFetch(path) {
+  const { key } = getCreds()
+  const res = await fetch(`${YT}${path}&key=${key}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+function dateNDaysAgo(n) {
+  const d = new Date(); d.setDate(d.getDate() - n)
+  return d.toISOString().replace('T',' ').slice(0,16)
+}
+
+async function fetchChannelStats(channelId) {
+  const d = await ytFetch(`/channels?part=statistics,snippet&id=${channelId}`)
+  const ch = d.items?.[0]
+  if (!ch) throw new Error('Channel not found. Check your Channel ID.')
+  return {
+    name: ch.snippet.title,
+    subscribers: parseInt(ch.statistics.subscriberCount || 0),
+    totalViews: parseInt(ch.statistics.viewCount || 0),
+    videoCount: parseInt(ch.statistics.videoCount || 0),
+  }
+}
+
+async function fetchRecentVideos(channelId) {
+  // Get uploads playlist
+  const chData = await ytFetch(`/channels?part=contentDetails&id=${channelId}`)
+  const uploadsId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
+  if (!uploadsId) throw new Error('Could not find uploads playlist.')
+
+  // Get 10 most recent videos
+  const plData = await ytFetch(`/playlistItems?part=contentDetails&playlistId=${uploadsId}&maxResults=10`)
+  const videoIds = plData.items.map(i => i.contentDetails.videoId).join(',')
+  if (!videoIds) return []
+
+  const vData = await ytFetch(`/videos?part=snippet,statistics&id=${videoIds}`)
+  return vData.items.map(v => ({
+    id: v.id,
+    title: v.snippet.title,
+    publishedAt: v.snippet.publishedAt,
+    views: parseInt(v.statistics.viewCount || 0),
+    likes: parseInt(v.statistics.likeCount || 0),
+    comments: parseInt(v.statistics.commentCount || 0),
+  }))
+}
+
+async function fetchChannelVideosStats(channelId) {
+  // For chart: get view counts from top 10 recent videos as a proxy for trend
+  // (YouTube Data API v3 doesn't have a free analytics timeline endpoint;
+  //  for a real 28-day chart you'd use YouTube Analytics API with OAuth)
+  const chData = await ytFetch(`/channels?part=contentDetails&id=${channelId}`)
+  const uploadsId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
+  const plData = await ytFetch(`/playlistItems?part=contentDetails,snippet&playlistId=${uploadsId}&maxResults=28`)
+  return plData.items.map(i => ({
+    date: i.snippet.publishedAt?.slice(0,10) || '',
+    title: i.snippet.title || '',
+  }))
+}
+
+// ─── Load & render ────────────────────────────────────────────
+async function loadData() {
+  const { key, channelId } = getCreds()
+  if (!key || !channelId) { resetCreds(); return }
+
+  $('spinner').style.display = 'block'
+  $('error-banner').style.display = 'none'
+
+  try {
+    const [channel, videos] = await Promise.all([
+      fetchChannelStats(channelId),
+      fetchRecentVideos(channelId),
+    ])
+
+    renderYouTube(channel, videos)
+    renderSeo()
+    renderGeo()
+
+    const now = new Date()
+    $('last-updated').textContent = `Updated ${now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · refreshes on page reload`
+    $('footer-time').textContent = now.toLocaleDateString([], {dateStyle:'medium'})
+
+  } catch (e) {
+    $('error-banner').textContent = `Error loading YouTube data: ${e.message}`
+    $('error-banner').style.display = 'block'
+    if (!$('yt-cards').innerHTML) renderSeo(), renderGeo()
+  } finally {
+    $('spinner').style.display = 'none'
+  }
+}
+
+// ─── Render YouTube ───────────────────────────────────────────
+function renderYouTube(channel, videos) {
+  // Sort videos by views descending
+  const sorted = [...videos].sort((a,b) => b.views - a.views)
+  const totalViews28 = sorted.reduce((s,v) => s+v.views, 0)
+  const totalLikes28 = sorted.reduce((s,v) => s+v.likes, 0)
+  const totalComments28 = sorted.reduce((s,v) => s+v.comments, 0)
+  const engRate = totalViews28 > 0 ? ((totalLikes28 + totalComments28) / totalViews28 * 100).toFixed(1) : '0.0'
+
+  // Metric cards
+  const cards = [
+    { label: 'Total subscribers', value: fmt(channel.subscribers) },
+    { label: 'Total channel views', value: fmt(channel.totalViews) },
+    { label: 'Videos on channel', value: channel.videoCount },
+    { label: 'Views (recent 10)', value: fmt(totalViews28), note: 'top 10 recent videos' },
+    { label: 'Likes (recent 10)', value: fmt(totalLikes28) },
+    { label: 'Comments (recent 10)', value: fmt(totalComments28) },
+    { label: 'Engagement rate', value: `${engRate}%`, note: '(likes+comments)/views' },
+  ]
+
+  $('yt-cards').innerHTML = cards.map(c => `
+    <div class="card">
+      <div class="metric-lbl">${c.label}</div>
+      <div class="metric-val">${c.value}</div>
+      ${c.note ? `<div class="metric-delta fl">${c.note}</div>` : ''}
+    </div>
+  `).join('')
+
+  // Top videos table
+  $('top-videos-body').innerHTML = sorted.slice(0,5).map((v,i) => `
+    <tr>
+      <td style="color:var(--hint);font-size:11px;">${i+1}</td>
+      <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.title}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums;">${fmt(v.views)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums;">${fmt(v.likes)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums;">${fmt(v.comments)}</td>
+    </tr>
+  `).join('')
+
+  // Views chart — use top 10 videos sorted by publish date as trend proxy
+  const chartData = [...videos]
+    .sort((a,b) => a.publishedAt?.localeCompare(b.publishedAt))
+    .slice(-14)
+    .map(v => ({ label: v.title.slice(0,18)+'…', views: v.views }))
+
+  destroyChart(chartViews)
+  chartViews = new Chart($('chart-views'), {
+    type: 'bar',
+    data: {
+      labels: chartData.map(d => d.label),
+      datasets: [{
+        label: 'Views',
+        data: chartData.map(d => d.views),
+        backgroundColor: '#2563eb',
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} views` } } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, color: '#94a3b8', maxRotation: 40 }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 }, color: '#94a3b8', callback: v => fmt(v) }, grid: { color: '#e3e6f0' } }
+      }
+    }
+  })
+}
+
+// ─── Render SEO (mock) ────────────────────────────────────────
+function renderSeo() {
+  const seo = {
+    domainAuthority: 62, daDelta: '+2 pts',
+    backlinks: 214, blDelta: '+34 new',
+    organicSessions: 28400, osDelta: '+9%',
+    avgRank: 14.2, rankDelta: '+1.8 pos',
+    serpFeatures: 18, sfDelta: '+4 new',
+    serpCtr: '3.1%', ctrDelta: '+0.5 pts',
+    keywords: [
+      { kw: 'CI/CD pipeline tutorial', rank: 4,  d: +2 },
+      { kw: 'Harness deploy',          rank: 7,  d: +5 },
+      { kw: 'DevOps platform',         rank: 11, d: +1 },
+      { kw: 'feature flags SaaS',      rank: 13, d: 0  },
+      { kw: 'software delivery',       rank: 19, d: -2 },
+      { kw: 'chaos engineering',       rank: 22, d: +8 },
+    ],
+    serpBreakdown: [
+      { type: 'Video carousel',   n: 8 },
+      { type: 'Featured snippet', n: 5 },
+      { type: 'Knowledge panel',  n: 3 },
+      { type: 'PAA',              n: 2 },
+    ]
+  }
+
+  $('seo-cards').innerHTML = [
+    { label: 'Domain authority', value: seo.domainAuthority, delta: seo.daDelta, cls: 'up' },
+    { label: 'Backlinks from video', value: fmt(seo.backlinks), delta: seo.blDelta, cls: 'up' },
+    { label: 'Organic sessions', value: fmt(seo.organicSessions), delta: seo.osDelta, cls: 'up' },
+    { label: 'Avg keyword rank', value: `#${seo.avgRank}`, delta: seo.rankDelta, cls: 'up' },
+    { label: 'Video SERP features', value: seo.serpFeatures, delta: seo.sfDelta, cls: 'up' },
+    { label: 'SERP CTR', value: seo.serpCtr, delta: seo.ctrDelta, cls: 'up' },
+  ].map(c => `<div class="card"><div class="metric-lbl">${c.label}</div><div class="metric-val">${c.value}</div><div class="metric-delta ${c.cls}">↑ ${c.delta}</div></div>`).join('')
+
+  $('kw-list').innerHTML = seo.keywords.map(k => `
+    <div class="kw-row">
+      <span class="kw-name">${k.kw}</span>
+      <span class="kw-rank">#${k.rank}</span>
+      <span class="kw-chg ${k.d>0?'up':k.d<0?'dn':'fl'}">${k.d>0?'↑'+k.d:k.d<0?'↓'+Math.abs(k.d):'→'}</span>
+    </div>
+  `).join('')
+
+  destroyChart(chartSerp)
+  chartSerp = new Chart($('chart-serp'), {
+    type: 'doughnut',
+    data: {
+      labels: seo.serpBreakdown.map(f => f.type),
+      datasets: [{ data: seo.serpBreakdown.map(f => f.n), backgroundColor: COLORS, borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } } }
+  })
+
+  $('serp-legend').innerHTML = seo.serpBreakdown.map((f,i) => `
+    <span><span class="legend-sq" style="background:${COLORS[i]}"></span>${f.type} (${f.n})</span>
+  `).join('')
+}
+
+// ─── Render GEO (mock) ────────────────────────────────────────
+function renderGeo() {
+  const geo = {
+    mentionShare: '7.4%', msDelta: '+1.2 pts',
+    citations: 38, citDelta: '+11 new',
+    queries: 126, qDelta: '+18%',
+    sentiment: '88%',
+    scores: [
+      { label: 'Content cited by AI', score: 74, color: '#2563eb' },
+      { label: 'Topical authority',   score: 68, color: '#059669' },
+      { label: 'Entity recognition',  score: 61, color: '#7c3aed' },
+      { label: 'Structured data',     score: 55, color: '#b45309' },
+      { label: 'E-E-A-T signals',     score: 80, color: '#059669' },
+    ],
+    platforms: [
+      { name: 'ChatGPT',    n: 14 },
+      { name: 'Perplexity', n: 11 },
+      { name: 'Gemini',     n: 7  },
+      { name: 'Copilot',    n: 4  },
+      { name: 'Claude',     n: 2  },
+    ],
+    aiQueries: [
+      { q: 'Best CI/CD tools 2025',        p: 'Perplexity', pos: 1, t: 'up',   v: true     },
+      { q: 'How to set up feature flags',  p: 'ChatGPT',    pos: 2, t: 'up',   v: true     },
+      { q: 'DevOps platform comparison',   p: 'Gemini',     pos: 3, t: 'flat', v: 'partial'},
+      { q: 'Chaos engineering tutorial',   p: 'Perplexity', pos: 2, t: 'up',   v: true     },
+      { q: 'Software delivery automation', p: 'Claude',     pos: 4, t: 'down', v: false    },
+      { q: 'Harness vs Jenkins',           p: 'ChatGPT',    pos: 1, t: 'up',   v: true     },
+    ]
+  }
+
+  $('geo-cards').innerHTML = [
+    { label: 'AI mention share', value: geo.mentionShare, delta: geo.msDelta, cls: 'up' },
+    { label: 'LLM citations',    value: geo.citations,    delta: geo.citDelta, cls: 'up' },
+    { label: 'Queries answered', value: geo.queries,      delta: geo.qDelta,   cls: 'up' },
+    { label: 'Brand sentiment',  value: geo.sentiment,    delta: 'positive tone', cls: 'fl' },
+  ].map(c => `<div class="card"><div class="metric-lbl">${c.label}</div><div class="metric-val">${c.value}</div><div class="metric-delta ${c.cls}">${c.cls==='up'?'↑':''} ${c.delta}</div></div>`).join('')
+
+  $('geo-scores').innerHTML = geo.scores.map(s => `
+    <div class="score-row">
+      <span class="score-name">${s.label}</span>
+      <div class="score-track"><div class="score-fill" style="width:${s.score}%;background:${s.color}"></div></div>
+      <span class="score-num">${s.score}</span>
+    </div>
+  `).join('')
+
+  destroyChart(chartGeo)
+  chartGeo = new Chart($('chart-geo'), {
+    type: 'bar',
+    data: {
+      labels: geo.platforms.map(p => p.name),
+      datasets: [{
+        label: 'Citations',
+        data: geo.platforms.map(p => p.n),
+        backgroundColor: COLORS,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 11 }, color: '#94a3b8' }, grid: { display: false } },
+        y: { ticks: { font: { size: 11 }, color: '#94a3b8', stepSize: 5 }, grid: { color: '#e3e6f0' } }
+      }
+    }
+  })
+
+  $('geo-queries').innerHTML = geo.aiQueries.map(q => `
+    <tr>
+      <td>${q.q}</td>
+      <td style="color:var(--muted)">${q.p}</td>
+      <td style="font-weight:500">#${q.pos}</td>
+      <td class="${q.t==='up'?'up':q.t==='down'?'dn':'fl'}">${q.t==='up'?'↑':q.t==='down'?'↓':'→'}</td>
+      <td>${q.v===true?'<span class="pill pill-g">Yes</span>':q.v==='partial'?'<span class="pill pill-a">Partial</span>':'<span class="pill pill-r">No</span>'}</td>
+    </tr>
+  `).join('')
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // Pre-baked credentials
+  localStorage.setItem('yt_api_key', 'AIzaSyBgtYmNGkKnNlqSCaeEnLO6387WFEE4qHs')
+  localStorage.setItem('yt_channel_id', 'UCSs-WCBvdDdBi5QPX95B_Mw')
+
+  $('setup').style.display = 'none'
+  $('dashboard').style.display = 'block'
+  loadData()
+})
+</script>
+</body>
+</html>
