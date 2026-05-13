@@ -3,632 +3,812 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Harness · YouTube & SEO/GEO Dashboard</title>
+<title>Harness · YouTube Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg:       #f5f6fa;
-    --surface:  #ffffff;
-    --border:   #e3e6f0;
-    --text:     #0f172a;
-    --muted:    #64748b;
-    --hint:     #94a3b8;
-    --brand:    #2563eb;
-    --brand-lt: #eff6ff;
-    --green:    #059669;
-    --green-lt: #ecfdf5;
-    --amber:    #b45309;
-    --amber-lt: #fffbeb;
-    --red:      #dc2626;
-    --red-lt:   #fef2f2;
-    --purple:   #7c3aed;
-    --purple-lt:#f5f3ff;
-    --r:        10px;
-    --r-lg:     14px;
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f5f6fa;--surface:#ffffff;--border:#e3e6f0;--text:#0f172a;--muted:#64748b;--hint:#94a3b8;
+    --brand:#2563eb;--brand-lt:#eff6ff;--green:#059669;--green-lt:#ecfdf5;
+    --amber:#b45309;--amber-lt:#fffbeb;--red:#dc2626;--red-lt:#fef2f2;--purple:#7c3aed;
+    --r:10px;--r-lg:14px;
   }
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  #app{max-width:1200px;margin:0 auto;padding:28px 24px 80px}
 
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  /* Topbar */
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap}
+  .topbar-left h1{font-size:20px;font-weight:600}
+  .topbar-left p{font-size:13px;color:var(--muted);margin-top:2px}
+  .topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
-  /* ─── Setup screen ─── */
-  #setup {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 100vh; padding: 24px;
-  }
-  .setup-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--r-lg); padding: 40px; max-width: 520px; width: 100%;
-  }
-  .setup-card h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-  .setup-card p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
-  .steps { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-  .steps li { margin-bottom: 8px; padding-left: 4px; }
-  .steps a { color: var(--brand); }
-  .field-label { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; display: block; }
-  .field-row { display: flex; gap: 8px; margin-bottom: 12px; }
-  .field-row input {
-    flex: 1; padding: 10px 14px; border: 1px solid var(--border);
-    border-radius: var(--r); font-family: 'DM Mono', monospace; font-size: 13px;
-    background: var(--bg); color: var(--text); outline: none;
-  }
-  .field-row input:focus { border-color: var(--brand); }
-  .btn {
-    padding: 10px 20px; border-radius: var(--r); border: none; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
-    background: var(--brand); color: #fff; white-space: nowrap;
-  }
-  .btn:hover { opacity: 0.9; }
-  .btn-sm { padding: 7px 14px; font-size: 13px; background: var(--surface); color: var(--muted); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; font-family: 'DM Sans', sans-serif; }
-  .btn-sm:hover { background: var(--bg); }
-  .error { color: var(--red); font-size: 13px; margin-top: 8px; display: none; }
+  /* Buttons */
+  .btn{padding:9px 18px;border-radius:var(--r);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:var(--brand);color:#fff}
+  .btn:hover{opacity:.9}
+  .btn-sm{padding:6px 12px;font-size:12px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:'DM Sans',sans-serif}
+  .btn-sm:hover{background:var(--bg)}
+  .btn-sm.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .btn-owner{background:var(--purple);color:#fff;border:none}
+  .btn-owner:hover{opacity:.9}
 
-  /* ─── Dashboard ─── */
-  #dashboard { display: none; max-width: 1160px; margin: 0 auto; padding: 28px 24px 64px; }
+  /* Pills */
+  .pill-live{font-size:11px;font-family:'DM Mono',monospace;padding:3px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;background:var(--green-lt);color:var(--green)}
+  .pill-owner{font-size:11px;font-family:'DM Mono',monospace;padding:3px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;background:#f5f3ff;color:var(--purple)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-  .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; gap: 12px; flex-wrap: wrap; }
-  .topbar-title { font-size: 20px; font-weight: 600; }
-  .topbar-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
-  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  /* Section headers */
+  .section-hd{display:flex;align-items:center;gap:8px;margin:32px 0 12px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .section-icon{font-size:15px}
 
-  .source-pill {
-    font-size: 11px; font-family: 'DM Mono', monospace;
-    padding: 3px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;
-  }
-  .source-live { background: var(--green-lt); color: var(--green); }
-  .source-mock { background: var(--amber-lt); color: var(--amber); }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
-  .dot-pulse { animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  /* Grids */
+  .grid{display:grid;gap:10px}
+  .g-auto{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .g-2{grid-template-columns:1fr 1fr}
+  .g-3{grid-template-columns:1fr 1fr 1fr}
 
-  .section-hd {
-    display: flex; align-items: center; gap: 8px;
-    margin: 32px 0 12px; font-size: 11px; font-weight: 600;
-    letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
-  }
-  .section-hd-icon { font-size: 16px; }
+  /* Cards */
+  .card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r-lg);padding:16px 18px}
+  .card-title{font-size:13px;font-weight:500;margin-bottom:14px}
+  .card-sub{font-size:12px;color:var(--muted);font-weight:400;margin-left:4px}
 
-  .grid { display: grid; gap: 10px; }
-  .grid-8 { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
-  .grid-6 { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-  .grid-2 { grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* Metric cards */
+  .m-lbl{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .m-val{font-size:22px;font-weight:500;line-height:1.2}
+  .m-note{font-size:12px;margin-top:4px;color:var(--hint)}
+  .up{color:var(--green)} .dn{color:var(--red)} .fl{color:var(--hint)}
 
-  .card {
-    background: var(--surface); border: 0.5px solid var(--border);
-    border-radius: var(--r-lg); padding: 16px 18px;
-  }
-  .card-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; }
+  /* Chart */
+  .chart-wrap{position:relative}
 
-  .metric-lbl { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  .metric-val { font-size: 22px; font-weight: 500; line-height: 1.2; }
-  .metric-delta { font-size: 12px; margin-top: 4px; }
-  .up { color: var(--green); } .dn { color: var(--red); } .fl { color: var(--hint); }
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:6px 10px;font-size:11px;color:var(--hint);font-weight:500;text-transform:uppercase;letter-spacing:.06em;border-bottom:.5px solid var(--border)}
+  td{padding:9px 10px;border-bottom:.5px solid var(--border)}
+  tr:last-child td{border-bottom:none}
+  .tr-hover:hover{background:var(--bg)}
 
-  .chart-wrap { position: relative; }
+  /* Date controls */
+  .date-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:.5px solid var(--border);border-radius:var(--r-lg);padding:10px 14px;margin-bottom:16px}
+  .date-bar label{font-size:12px;font-weight:500;color:var(--muted)}
+  .date-grp{display:flex;gap:4px}
+  .date-inp{padding:5px 9px;border:1px solid var(--border);border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;background:var(--bg);color:var(--text);outline:none}
+  .date-inp:focus{border-color:var(--brand)}
+  .date-nav{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .date-range-lbl{font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);min-width:160px;text-align:center}
 
-  .kw-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; }
-  .kw-name { flex: 1; color: var(--text); }
-  .kw-rank { width: 30px; text-align: right; font-weight: 500; }
-  .kw-chg  { width: 26px; text-align: right; font-size: 12px; }
+  /* Lock card */
+  .lock-card{text-align:center;padding:48px 24px}
+  .lock-card .lc-icon{font-size:32px;margin-bottom:12px}
+  .lock-card .lc-title{font-weight:600;font-size:15px;margin-bottom:8px}
+  .lock-card .lc-sub{font-size:13px;color:var(--muted);margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6}
 
-  .score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; }
-  .score-name { width: 145px; font-size: 12px; color: var(--muted); flex-shrink: 0; }
-  .score-track { flex: 1; height: 7px; border-radius: 4px; background: var(--bg); overflow: hidden; }
-  .score-fill { height: 100%; border-radius: 4px; }
-  .score-num { width: 28px; text-align: right; font-weight: 500; font-size: 13px; }
+  /* User pill */
+  .user-pill{display:flex;align-items:center;gap:7px;padding:3px 10px 3px 3px;background:var(--green-lt);border-radius:20px;font-size:12px;color:var(--green)}
+  .user-pill img{width:22px;height:22px;border-radius:50%}
 
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 6px 10px; font-size: 11px; color: var(--hint); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; border-bottom: 0.5px solid var(--border); }
-  td { padding: 9px 10px; border-bottom: 0.5px solid var(--border); }
-  tr:last-child td { border-bottom: none; }
+  /* Funnel */
+  .funnel{display:flex;gap:0;align-items:stretch}
+  .funnel-step{flex:1;text-align:center;padding:18px 8px;background:var(--bg);position:relative}
+  .funnel-step:first-child{border-radius:var(--r) 0 0 var(--r)}
+  .funnel-step:last-child{border-radius:0 var(--r) var(--r) 0}
+  .funnel-arrow{display:flex;align-items:center;color:var(--hint);font-size:18px;padding:0 2px;flex-shrink:0}
+  .funnel-lbl{font-size:11px;color:var(--muted);margin-bottom:4px}
+  .funnel-val{font-size:20px;font-weight:600}
+  .funnel-sub{font-size:11px;color:var(--hint);margin-top:2px}
 
-  .pill { font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 500; display: inline-block; }
-  .pill-g { background: var(--green-lt); color: var(--green); }
-  .pill-a { background: var(--amber-lt); color: var(--amber); }
-  .pill-r { background: var(--red-lt); color: var(--red); }
+  /* Legend */
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:12px;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .lsq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
-  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
-  .legend span { display: flex; align-items: center; gap: 5px; }
-  .legend-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; display: inline-block; }
+  /* Bars (inline) */
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .bar-lbl{font-size:12px;flex:0 0 130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-track{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:4px;transition:width .5s}
+  .bar-val{font-size:12px;font-family:'DM Mono',monospace;flex:0 0 40px;text-align:right;color:var(--muted)}
 
-  .footer { margin-top: 40px; font-size: 12px; color: var(--hint); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  /* Error */
+  #error-banner{display:none;background:var(--red-lt);border:1px solid #fca5a5;color:var(--red);border-radius:var(--r);padding:12px 16px;font-size:13px;margin-bottom:16px}
 
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: spin .6s linear infinite; display: none; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  /* Spinner */
+  .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .6s linear infinite;display:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
-  #error-banner { display: none; background: var(--red-lt); border: 1px solid #fca5a5; color: var(--red); border-radius: var(--r); padding: 12px 16px; font-size: 13px; margin-bottom: 16px; }
+  /* Highlight card */
+  .highlight-card{background:linear-gradient(135deg,var(--brand-lt),#f0fdf4);border:.5px solid var(--border)}
 
-  @media (max-width: 640px) {
-    .grid-2 { grid-template-columns: 1fr; }
-    #dashboard { padding: 16px 14px 48px; }
-  }
+  @media(max-width:700px){.g-2,.g-3{grid-template-columns:1fr}#app{padding:14px 12px 60px}.date-nav{margin-left:0}}
 </style>
 </head>
 <body>
+<div id="app">
 
-<!-- ══ SETUP SCREEN ══════════════════════════════════ -->
-<div id="setup">
-  <div class="setup-card">
-    <h1>Harness · YouTube Dashboard</h1>
-    <p>Enter your YouTube Data API key and Channel ID to load the dashboard. These are saved in your browser only — never sent anywhere except directly to Google's API.</p>
-
-    <ol class="steps">
-      <li>Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → create a project</li>
-      <li>Enable <strong>YouTube Data API v3</strong></li>
-      <li>Create credentials → <strong>API Key</strong> (restrict it to YouTube Data API)</li>
-      <li>Find your Channel ID in YouTube Studio → Settings → Channel → Advanced</li>
-    </ol>
-
-    <label class="field-label">YouTube Data API Key</label>
-    <div class="field-row">
-      <input id="inp-key" type="password" placeholder="AIzaSy…" autocomplete="off" />
-    </div>
-
-    <label class="field-label">Channel ID</label>
-    <div class="field-row">
-      <input id="inp-channel" type="text" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
-      <button class="btn" onclick="startDashboard()">Load →</button>
-    </div>
-
-    <p class="error" id="setup-error"></p>
-
-    <p style="font-size:12px; color:var(--hint); margin-top:16px;">
-      Your credentials are saved in <code>localStorage</code> so you only enter them once per browser. To reset, click the ⚙ button in the dashboard.
-    </p>
-  </div>
-</div>
-
-<!-- ══ DASHBOARD ══════════════════════════════════════ -->
-<div id="dashboard">
-
+  <!-- Topbar -->
   <div class="topbar">
-    <div>
-      <div class="topbar-title">Harness · YouTube &amp; SEO/GEO</div>
-      <div class="topbar-sub" id="last-updated">Loading…</div>
+    <div class="topbar-left">
+      <h1>Harness · YouTube Analytics</h1>
+      <p id="last-updated">Loading channel data…</p>
     </div>
-    <div class="topbar-actions">
+    <div class="topbar-right">
       <div class="spinner" id="spinner"></div>
-      <span class="source-pill source-live"><span class="dot dot-pulse"></span>YouTube live</span>
-      <span class="source-pill source-mock">SEO/GEO mock</span>
-      <button class="btn-sm" onclick="loadData()">↻ Refresh</button>
-      <button class="btn-sm" onclick="resetCreds()" title="Change credentials">⚙</button>
+      <span class="pill-live"><span class="dot"></span>Live</span>
+      <div id="user-pill-wrap"></div>
+      <button class="btn-sm" onclick="loadPublicData()">↻ Refresh</button>
+      <button class="btn-sm btn-owner" id="owner-btn" onclick="ownerLogin()">🔐 Owner login</button>
     </div>
   </div>
 
   <div id="error-banner"></div>
 
-  <!-- ── YouTube metrics ── -->
-  <div class="section-hd"><span class="section-hd-icon">▶</span> YouTube performance · last 28 days</div>
-  <div class="grid grid-8" id="yt-cards"></div>
+  <!-- ═══ CHANNEL OVERVIEW (public) ═══ -->
+  <div class="section-hd"><span class="section-icon">📺</span> Channel overview</div>
+  <div class="grid g-auto" id="channel-cards"></div>
 
-  <div class="card" style="margin-top:10px;">
-    <div class="card-title">Daily views — last 28 days</div>
-    <div class="legend">
-      <span><span class="legend-sq" style="background:#2563eb"></span>Views</span>
+  <!-- ═══ UPLOAD CADENCE (public) ═══ -->
+  <div class="section-hd"><span class="section-icon">📅</span> Upload cadence</div>
+  <div class="grid g-2" style="margin-bottom:10px">
+    <div class="card">
+      <div class="card-title">Uploads per month <span class="card-sub">(last 12 months)</span></div>
+      <div class="chart-wrap" style="height:160px"><canvas id="chart-cadence"></canvas></div>
     </div>
-    <div class="chart-wrap" style="height:200px;">
-      <canvas id="chart-views" role="img" aria-label="Daily views over 28 days"></canvas>
+    <div class="card" id="upload-stats-card">
+      <div class="card-title">Upload stats</div>
+      <div id="upload-stats"></div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:10px;">
-    <div class="card-title">Top 5 videos · last 28 days</div>
-    <div style="overflow-x:auto;">
-      <table id="top-videos-table">
-        <thead><tr><th>#</th><th>Title</th><th style="text-align:right">Views</th><th style="text-align:right">Likes</th><th style="text-align:right">Comments</th></tr></thead>
-        <tbody id="top-videos-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ── SEO ── -->
-  <div class="section-hd"><span class="section-hd-icon">🔍</span> SEO impact <span class="source-pill source-mock" style="margin-left:4px;font-size:10px;">mock data — connect Semrush/GSC to make live</span></div>
-  <div class="grid grid-6" id="seo-cards"></div>
-
-  <div class="grid grid-2" style="margin-top:10px;">
-    <div class="card">
-      <div class="card-title">Keyword rankings</div>
-      <div id="kw-list"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">SERP feature types won</div>
-      <div class="chart-wrap" style="height:180px;">
-        <canvas id="chart-serp" role="img" aria-label="SERP feature breakdown donut chart"></canvas>
-      </div>
-      <div class="legend" style="margin-top:10px;" id="serp-legend"></div>
-    </div>
-  </div>
-
-  <!-- ── GEO ── -->
-  <div class="section-hd"><span class="section-hd-icon">🤖</span> GEO — generative engine optimization <span class="source-pill source-mock" style="margin-left:4px;font-size:10px;">mock data — connect Profound/Goodie to make live</span></div>
-  <div class="grid grid-6" id="geo-cards"></div>
-
-  <div class="grid grid-2" style="margin-top:10px;">
-    <div class="card">
-      <div class="card-title">GEO score breakdown</div>
-      <div id="geo-scores"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Citations by AI platform</div>
-      <div class="chart-wrap" style="height:200px;">
-        <canvas id="chart-geo" role="img" aria-label="AI platform citations bar chart"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:10px;">
-    <div class="card-title">Queries where Harness appears in AI answers</div>
-    <div style="overflow-x:auto;">
+  <div class="card">
+    <div class="card-title">Recent videos <span class="card-sub">(sorted by views)</span></div>
+    <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>Query</th><th>Platform</th><th>Position</th><th>Trend</th><th>Video cited?</th></tr></thead>
-        <tbody id="geo-queries"></tbody>
+        <thead><tr><th>#</th><th>Title</th><th style="text-align:right">Views</th><th style="text-align:right">Likes</th><th style="text-align:right">Comments</th><th style="text-align:right">Published</th></tr></thead>
+        <tbody id="videos-body"></tbody>
       </table>
     </div>
   </div>
 
-  <div class="footer">
-    <span>Harness YouTube × SEO/GEO Dashboard · Data from YouTube Data API v3</span>
-    <span id="footer-time"></span>
+  <!-- ═══ ANALYTICS — owner gated ═══ -->
+  <div class="section-hd"><span class="section-icon">📊</span> Analytics <span id="analytics-period-lbl" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--hint)">· last 28 days</span>
+    <span class="pill-owner" style="margin-left:4px;font-size:10px;" id="owner-only-pill">owner only</span>
+  </div>
+
+  <!-- Lock state -->
+  <div class="card lock-card" id="analytics-lock">
+    <div class="lc-icon">📊</div>
+    <div class="lc-title">Full analytics require owner sign-in</div>
+    <div class="lc-sub">Day-by-day trends, traffic sources, device breakdown, geographic data, impressions and CTR — all visible once you sign in with the channel's Google account.</div>
+    <button class="btn btn-owner" onclick="ownerLogin()">Sign in as owner →</button>
+  </div>
+
+  <!-- Analytics content -->
+  <div id="analytics-section" style="display:none">
+
+    <!-- Date range bar -->
+    <div class="date-bar">
+      <label>Range:</label>
+      <div class="date-grp">
+        <button class="btn-sm" id="btn-7d"  onclick="setRange(7)">7d</button>
+        <button class="btn-sm active" id="btn-28d" onclick="setRange(28)">28d</button>
+        <button class="btn-sm" id="btn-90d" onclick="setRange(90)">90d</button>
+      </div>
+      <span style="color:var(--border);font-size:16px">|</span>
+      <input type="date" id="date-start" class="date-inp" onchange="setCustomRange()" />
+      <span style="font-size:12px;color:var(--hint)">→</span>
+      <input type="date" id="date-end"   class="date-inp" onchange="setCustomRange()" />
+      <div class="date-nav">
+        <button class="btn-sm" onclick="shiftDays(-1)">← Prev</button>
+        <span class="date-range-lbl" id="range-lbl"></span>
+        <button class="btn-sm" onclick="shiftDays(1)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Period snapshot cards -->
+    <div class="grid g-auto" id="snapshot-cards"></div>
+
+    <!-- Impressions funnel -->
+    <div class="card" style="margin-top:10px" id="funnel-card">
+      <div class="card-title">Discovery funnel <span class="card-sub">impressions → clicks → views</span></div>
+      <div class="funnel" id="funnel-wrap"></div>
+    </div>
+
+    <!-- Daily views + watchtime -->
+    <div class="card" style="margin-top:10px">
+      <div class="card-title" id="views-title">Daily views &amp; watch time</div>
+      <div class="legend">
+        <span><span class="lsq" style="background:#2563eb"></span>Views</span>
+        <span><span class="lsq" style="background:#059669"></span>Watch hours</span>
+      </div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chart-views"></canvas></div>
+    </div>
+
+    <!-- Subscribers + Engagement -->
+    <div class="grid g-2" style="margin-top:10px">
+      <div class="card">
+        <div class="card-title">Subscribers gained / lost</div>
+        <div class="chart-wrap" style="height:180px"><canvas id="chart-subs"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Engagement <span class="card-sub">likes · comments · shares</span></div>
+        <div class="chart-wrap" style="height:180px"><canvas id="chart-engage"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Traffic sources + Devices -->
+    <div class="grid g-2" style="margin-top:10px">
+      <div class="card">
+        <div class="card-title">Traffic sources <span class="card-sub">where viewers find you</span></div>
+        <div id="traffic-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Device breakdown</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-devices"></canvas></div>
+        <div class="legend" style="margin-top:8px" id="device-legend"></div>
+      </div>
+    </div>
+
+    <!-- Geography + Avg view duration trend -->
+    <div class="grid g-2" style="margin-top:10px">
+      <div class="card">
+        <div class="card-title">Top countries <span class="card-sub">by views</span></div>
+        <div id="geo-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Avg view duration &amp; retention</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-retention"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Top videos (analytics period) -->
+    <div class="card" style="margin-top:10px">
+      <div class="card-title">Top videos <span class="card-sub">selected period — ranked by views</span></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>#</th><th>Title</th><th style="text-align:right">Views</th><th style="text-align:right">Watch hrs</th><th style="text-align:right">Avg duration</th><th style="text-align:right">Likes</th><th style="text-align:right">Comments</th><th style="text-align:right">Published</th></tr></thead>
+          <tbody id="top-videos-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /analytics-section -->
+
+  <div class="footer" style="margin-top:40px;font-size:12px;color:var(--hint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span>Harness YouTube Analytics · YouTube Data API v3 + Analytics API v2</span>
+    <span id="footer-ts"></span>
   </div>
 </div>
 
 <script>
-// ─── Helpers ────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  CONFIG — credentials baked in
+// ══════════════════════════════════════════════════════
+const CONFIG = {
+  API_KEY:    'AIzaSyBgtYmNGkKnNlqSCaeEnLO6387WFEE4qHs',
+  CHANNEL_ID: 'UCSs-WCBvdDdBi5QPX95B_Mw',
+  CLIENT_ID:  '767101900987-m1njv3jsfahkikee5skst8vn5190itur.apps.googleusercontent.com',
+}
+
+// ══════════════════════════════════════════════════════
+//  Constants
+// ══════════════════════════════════════════════════════
+const COLORS = ['#2563eb','#059669','#b45309','#7c3aed','#dc2626','#0891b2','#d97706','#0f766e']
+const DEVICE_LABELS = {DESKTOP:'Desktop',MOBILE:'Mobile',TABLET:'Tablet',TV:'TV / Smart',GAME_CONSOLE:'Console',UNKNOWN_PLATFORM:'Other'}
+const TRAFFIC_LABELS = {
+  YT_SEARCH:'YouTube Search',SUGGESTED_VIDEO:'Suggested Video',YT_CHANNEL:'Channel Page',
+  EXT_URL:'External / Web',SUBSCRIBER:'Subscriptions Feed',NOTIFICATION:'Notifications',
+  PLAYLIST:'Playlists',END_SCREEN:'End Screens',ADVERTISING:'Ads',NO_LINK_EMBEDDED:'Embedded Player',
+  NO_LINK_OTHER:'Direct / Other',YT_OTHER_PAGE:'Other YouTube',SHORTS:'Shorts Feed',
+  YT_SHORTS_BROWSE_FEED:'Shorts Browse',HASHTAGS:'Hashtags',TRENDING:'Trending',RELATED_VIDEO:'Related Video',
+}
+
+// ══════════════════════════════════════════════════════
+//  Helpers
+// ══════════════════════════════════════════════════════
 const $ = id => document.getElementById(id)
-const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : String(n)
-const secToMs = s => { const m = Math.floor(s/60), ss = s%60; return `${m}:${String(ss).padStart(2,'0')}` }
-const COLORS = ['#2563eb','#059669','#b45309','#7c3aed','#dc2626']
+const fmt = n => n==null?'—':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(Math.round(n))
+const fmtH = mins => mins==null?'—':mins>=60?(mins/60).toFixed(1)+'h':(Math.round(mins)+'m')
+const fmtDur = s => { if(!s)return'—'; const m=Math.floor(s/60),ss=Math.round(s%60); return `${m}:${String(ss).padStart(2,'0')}` }
+const fmtPct = n => n==null?'—':(n*100).toFixed(1)+'%'
 
-let chartViews, chartSerp, chartGeo
+let charts = {}
+function dc(key) { if(charts[key]){try{charts[key].destroy()}catch(e){} delete charts[key]} }
+function mc(key, el, config) { dc(key); if(!$(el))return; charts[key]=new Chart($(el),config); return charts[key] }
 
-function destroyChart(c) { if (c) { try { c.destroy() } catch(e){} } }
+// ══════════════════════════════════════════════════════
+//  Date utilities
+// ══════════════════════════════════════════════════════
+const toYMD = d => d.toISOString().slice(0,10)
+const fromYMD = s => new Date(s+'T00:00:00')
+const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r }
+const fmtDisp = s => fromYMD(s).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})
 
-// ─── Credentials ─────────────────────────────────────────────
-function getCreds() {
-  return {
-    key: localStorage.getItem('yt_api_key') || '',
-    channelId: localStorage.getItem('yt_channel_id') || '',
+let state = { start: toYMD(addDays(new Date(),-27)), end: toYMD(new Date()), preset: '28d' }
+
+function setRange(d) {
+  state.end=toYMD(new Date()); state.start=toYMD(addDays(new Date(),-(d-1))); state.preset=d+'d'
+  syncUI(); loadAnalytics()
+}
+function setCustomRange() {
+  const s=$('date-start').value, e=$('date-end').value
+  if(!s||!e||s>e)return
+  state.start=s; state.end=e; state.preset=null; syncUI(); loadAnalytics()
+}
+function shiftDays(delta) {
+  const days = Math.round((fromYMD(state.end)-fromYMD(state.start))/86400000)+1
+  state.start=toYMD(addDays(fromYMD(state.start),delta))
+  state.end  =toYMD(addDays(fromYMD(state.end),delta))
+  const today=toYMD(new Date())
+  if(state.end>today){state.end=today;state.start=toYMD(addDays(fromYMD(today),-(days-1)))}
+  state.preset=null; syncUI(); loadAnalytics()
+}
+function syncUI() {
+  $('date-start').value=state.start; $('date-end').value=state.end
+  ;['7d','28d','90d'].forEach(k=>{const el=$('btn-'+k);if(el)el.classList.toggle('active',state.preset===k)})
+  const days=Math.round((fromYMD(state.end)-fromYMD(state.start))/86400000)+1
+  $('range-lbl').textContent=days===1?fmtDisp(state.start):`${fmtDisp(state.start)} – ${fmtDisp(state.end)}`
+  $('analytics-period-lbl').textContent=`· ${state.start} → ${state.end}`
+  if($('views-title'))$('views-title').textContent=`Daily views & watch time — ${state.start} → ${state.end}`
+}
+
+// ══════════════════════════════════════════════════════
+//  OAuth
+// ══════════════════════════════════════════════════════
+let accessToken=null, tokenExpiry=0, tokenClient=null, ownerInfo=null, isOwner=false
+
+function ownerLogin() {
+  const t=localStorage.getItem('yt_access_token'), e=parseInt(localStorage.getItem('yt_token_expiry')||'0')
+  if(t&&e>Date.now()){accessToken=t;tokenExpiry=e;fetchOwnerInfo().then(activateOwner);return}
+  if(!tokenClient) tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CONFIG.CLIENT_ID,
+    scope:'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly',
+    callback:async resp=>{
+      if(resp.error){alert('OAuth error: '+resp.error);return}
+      accessToken=resp.access_token; tokenExpiry=Date.now()+(resp.expires_in-60)*1000
+      localStorage.setItem('yt_access_token',accessToken); localStorage.setItem('yt_token_expiry',String(tokenExpiry))
+      await fetchOwnerInfo(); activateOwner()
+    }
+  })
+  tokenClient.requestAccessToken()
+}
+function ownerLogout() {
+  localStorage.removeItem('yt_access_token'); localStorage.removeItem('yt_token_expiry')
+  accessToken=null;tokenExpiry=0;isOwner=false;ownerInfo=null
+  $('user-pill-wrap').innerHTML=''; $('owner-btn').style.display='inline-flex'
+  $('analytics-lock').style.display='block'; $('analytics-section').style.display='none'
+}
+async function fetchOwnerInfo() {
+  try{const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:`Bearer ${accessToken}`}});ownerInfo=await r.json()}catch(e){}
+}
+function activateOwner() {
+  isOwner=true
+  $('analytics-lock').style.display='none'; $('analytics-section').style.display='block'
+  $('owner-btn').style.display='none'
+  if(ownerInfo){
+    $('user-pill-wrap').innerHTML=`
+      <div class="user-pill">${ownerInfo.picture?`<img src="${ownerInfo.picture}" alt=""/>`:''} ${ownerInfo.name||'Owner'}</div>
+      <button class="btn-sm" onclick="ownerLogout()" style="font-size:11px">Sign out</button>`
   }
-}
-function saveCreds(key, channelId) {
-  localStorage.setItem('yt_api_key', key)
-  localStorage.setItem('yt_channel_id', channelId)
-}
-function resetCreds() {
-  localStorage.removeItem('yt_api_key')
-  localStorage.removeItem('yt_channel_id')
-  $('dashboard').style.display = 'none'
-  $('setup').style.display = 'flex'
+  syncUI(); loadAnalytics()
 }
 
-async function startDashboard() {
-  const key = $('inp-key').value.trim()
-  const channelId = $('inp-channel').value.trim()
-  if (!key || !channelId) { showSetupError('Please enter both fields.'); return }
-  saveCreds(key, channelId)
-  $('setup').style.display = 'none'
-  $('dashboard').style.display = 'block'
-  await loadData()
+// ══════════════════════════════════════════════════════
+//  API helpers + cache
+// ══════════════════════════════════════════════════════
+const YTV='https://www.googleapis.com/youtube/v3'
+const YTA='https://youtubeanalytics.googleapis.com/v2'
+const CACHE={}
+function ck(u){return'ytc_'+btoa(u).slice(0,80)}
+function cg(u){const k=ck(u);if(CACHE[k]?.expiry>Date.now())return CACHE[k].data;try{const j=JSON.parse(localStorage.getItem(k)||'');if(j?.expiry>Date.now()){CACHE[k]=j;return j.data}}catch(e){}return null}
+function cs(u,d,ttl=15*60*1000){const k=ck(u),e={data:d,expiry:Date.now()+ttl};CACHE[k]=e;try{localStorage.setItem(k,JSON.stringify(e))}catch(e){}}
+
+async function pub(url) {
+  const c=cg(url);if(c)return c
+  const r=await fetch(url);if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||`HTTP ${r.status}`)}
+  const d=await r.json();cs(url,d);return d
+}
+async function auth(url) {
+  const c=cg(url);if(c)return c
+  const r=await fetch(url,{headers:{Authorization:`Bearer ${accessToken}`}})
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||`HTTP ${r.status}`)}
+  const d=await r.json();cs(url,d);return d
+}
+function parseAnalytics(d){
+  const cols=(d.columnHeaders||[]).map(c=>c.name)
+  return (d.rows||[]).map(row=>{const o={};cols.forEach((c,i)=>{o[c]=row[i]});return o})
 }
 
-function showSetupError(msg) {
-  $('setup-error').textContent = msg
-  $('setup-error').style.display = 'block'
+// ══════════════════════════════════════════════════════
+//  Public data fetchers
+// ══════════════════════════════════════════════════════
+async function fetchChannel() {
+  const d=await pub(`${YTV}/channels?part=statistics,snippet&id=${CONFIG.CHANNEL_ID}&key=${CONFIG.API_KEY}`)
+  const ch=d.items?.[0];if(!ch)throw new Error('Channel not found')
+  return{name:ch.snippet.title,thumbnail:ch.snippet.thumbnails?.default?.url,
+    subscribers:parseInt(ch.statistics.subscriberCount||0),totalViews:parseInt(ch.statistics.viewCount||0),
+    videoCount:parseInt(ch.statistics.videoCount||0)}
 }
-
-// ─── YouTube API ─────────────────────────────────────────────
-const YT = 'https://www.googleapis.com/youtube/v3'
-
-async function ytFetch(path) {
-  const { key } = getCreds()
-  const res = await fetch(`${YT}${path}&key=${key}`)
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error?.message || `HTTP ${res.status}`)
-  }
-  return res.json()
-}
-
-function dateNDaysAgo(n) {
-  const d = new Date(); d.setDate(d.getDate() - n)
-  return d.toISOString().replace('T',' ').slice(0,16)
-}
-
-async function fetchChannelStats(channelId) {
-  const d = await ytFetch(`/channels?part=statistics,snippet&id=${channelId}`)
-  const ch = d.items?.[0]
-  if (!ch) throw new Error('Channel not found. Check your Channel ID.')
-  return {
-    name: ch.snippet.title,
-    subscribers: parseInt(ch.statistics.subscriberCount || 0),
-    totalViews: parseInt(ch.statistics.viewCount || 0),
-    videoCount: parseInt(ch.statistics.videoCount || 0),
-  }
-}
-
-async function fetchRecentVideos(channelId) {
-  // Get uploads playlist
-  const chData = await ytFetch(`/channels?part=contentDetails&id=${channelId}`)
-  const uploadsId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
-  if (!uploadsId) throw new Error('Could not find uploads playlist.')
-
-  // Get 10 most recent videos
-  const plData = await ytFetch(`/playlistItems?part=contentDetails&playlistId=${uploadsId}&maxResults=10`)
-  const videoIds = plData.items.map(i => i.contentDetails.videoId).join(',')
-  if (!videoIds) return []
-
-  const vData = await ytFetch(`/videos?part=snippet,statistics&id=${videoIds}`)
-  return vData.items.map(v => ({
-    id: v.id,
-    title: v.snippet.title,
-    publishedAt: v.snippet.publishedAt,
-    views: parseInt(v.statistics.viewCount || 0),
-    likes: parseInt(v.statistics.likeCount || 0),
-    comments: parseInt(v.statistics.commentCount || 0),
+async function fetchUploads(maxResults=50) {
+  const ch=await pub(`${YTV}/channels?part=contentDetails&id=${CONFIG.CHANNEL_ID}&key=${CONFIG.API_KEY}`)
+  const pid=ch.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;if(!pid)return[]
+  const pl=await pub(`${YTV}/playlistItems?part=contentDetails&playlistId=${pid}&maxResults=${maxResults}&key=${CONFIG.API_KEY}`)
+  const ids=pl.items.map(i=>i.contentDetails.videoId).join(',');if(!ids)return[]
+  const vd=await pub(`${YTV}/videos?part=snippet,statistics,contentDetails&id=${ids}&key=${CONFIG.API_KEY}`)
+  return vd.items.map(v=>({
+    id:v.id,title:v.snippet.title,publishedAt:v.snippet.publishedAt,
+    views:parseInt(v.statistics.viewCount||0),likes:parseInt(v.statistics.likeCount||0),
+    comments:parseInt(v.statistics.commentCount||0),
+    duration:v.contentDetails?.duration||'',
   }))
 }
 
-async function fetchChannelVideosStats(channelId) {
-  // For chart: get view counts from top 10 recent videos as a proxy for trend
-  // (YouTube Data API v3 doesn't have a free analytics timeline endpoint;
-  //  for a real 28-day chart you'd use YouTube Analytics API with OAuth)
-  const chData = await ytFetch(`/channels?part=contentDetails&id=${channelId}`)
-  const uploadsId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
-  const plData = await ytFetch(`/playlistItems?part=contentDetails,snippet&playlistId=${uploadsId}&maxResults=28`)
-  return plData.items.map(i => ({
-    date: i.snippet.publishedAt?.slice(0,10) || '',
-    title: i.snippet.title || '',
-  }))
+// ══════════════════════════════════════════════════════
+//  Analytics fetchers
+// ══════════════════════════════════════════════════════
+async function fetchDailyMetrics(start,end) {
+  const metrics='views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained,subscribersLost,likes,dislikes,comments,shares'
+  return parseAnalytics(await auth(`${YTA}/reports?ids=channel%3D%3D${CONFIG.CHANNEL_ID}&startDate=${start}&endDate=${end}&metrics=${metrics}&dimensions=day&sort=day`))
 }
-
-// ─── Load & render ────────────────────────────────────────────
-async function loadData() {
-  const { key, channelId } = getCreds()
-  if (!key || !channelId) { resetCreds(); return }
-
-  $('spinner').style.display = 'block'
-  $('error-banner').style.display = 'none'
-
+async function fetchImpressions(start,end) {
   try {
-    const [channel, videos] = await Promise.all([
-      fetchChannelStats(channelId),
-      fetchRecentVideos(channelId),
-    ])
-
-    renderYouTube(channel, videos)
-    renderSeo()
-    renderGeo()
-
-    const now = new Date()
-    $('last-updated').textContent = `Updated ${now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · refreshes on page reload`
-    $('footer-time').textContent = now.toLocaleDateString([], {dateStyle:'medium'})
-
-  } catch (e) {
-    $('error-banner').textContent = `Error loading YouTube data: ${e.message}`
-    $('error-banner').style.display = 'block'
-    if (!$('yt-cards').innerHTML) renderSeo(), renderGeo()
-  } finally {
-    $('spinner').style.display = 'none'
-  }
+    return parseAnalytics(await auth(`${YTA}/reports?ids=channel%3D%3D${CONFIG.CHANNEL_ID}&startDate=${start}&endDate=${end}&metrics=views,impressions,impressionBasedClickThroughRate`))
+  } catch(e) { return [] }
+}
+async function fetchTrafficSources(start,end) {
+  return parseAnalytics(await auth(`${YTA}/reports?ids=channel%3D%3D${CONFIG.CHANNEL_ID}&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched&dimensions=insightTrafficSourceType&sort=-views`))
+}
+async function fetchDevices(start,end) {
+  return parseAnalytics(await auth(`${YTA}/reports?ids=channel%3D%3D${CONFIG.CHANNEL_ID}&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched&dimensions=deviceType&sort=-views`))
+}
+async function fetchCountries(start,end) {
+  return parseAnalytics(await auth(`${YTA}/reports?ids=channel%3D%3D${CONFIG.CHANNEL_ID}&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched&dimensions=country&sort=-views&maxResults=10`))
+}
+async function fetchTopVideosAnalytics(start,end) {
+  try {
+    const rows=parseAnalytics(await auth(`${YTA}/reports?ids=channel%3D%3D${CONFIG.CHANNEL_ID}&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched,averageViewDuration,likes,comments,shares&dimensions=video&sort=-views&maxResults=15`))
+    if(!rows.length)return[]
+    const ids=rows.map(r=>r.video).join(',')
+    const vd=await auth(`${YTV}/videos?part=snippet&id=${ids}`)
+    const tm={};(vd.items||[]).forEach(v=>{tm[v.id]={title:v.snippet.title,publishedAt:v.snippet.publishedAt}})
+    return rows.map(r=>({...r,title:tm[r.video]?.title||r.video,publishedAt:tm[r.video]?.publishedAt||''}))
+  }catch(e){return[]}
 }
 
-// ─── Render YouTube ───────────────────────────────────────────
-function renderYouTube(channel, videos) {
-  // Sort videos by views descending
-  const sorted = [...videos].sort((a,b) => b.views - a.views)
-  const totalViews28 = sorted.reduce((s,v) => s+v.views, 0)
-  const totalLikes28 = sorted.reduce((s,v) => s+v.likes, 0)
-  const totalComments28 = sorted.reduce((s,v) => s+v.comments, 0)
-  const engRate = totalViews28 > 0 ? ((totalLikes28 + totalComments28) / totalViews28 * 100).toFixed(1) : '0.0'
+// ══════════════════════════════════════════════════════
+//  Public load
+// ══════════════════════════════════════════════════════
+async function loadPublicData() {
+  $('spinner').style.display='block'; $('error-banner').style.display='none'
+  try {
+    const [channel,videos]=await Promise.all([fetchChannel(),fetchUploads(50)])
+    renderChannelOverview(channel)
+    renderUploadCadence(videos)
+    renderRecentVideos(videos)
+    const now=new Date()
+    $('last-updated').textContent=`Updated ${now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`
+    $('footer-ts').textContent=now.toLocaleDateString([],{dateStyle:'medium'})
+  }catch(e){
+    $('error-banner').textContent=`Error: ${e.message}`; $('error-banner').style.display='block'
+  }finally{$('spinner').style.display='none'}
+}
 
-  // Metric cards
-  const cards = [
-    { label: 'Total subscribers', value: fmt(channel.subscribers) },
-    { label: 'Total channel views', value: fmt(channel.totalViews) },
-    { label: 'Videos on channel', value: channel.videoCount },
-    { label: 'Views (recent 10)', value: fmt(totalViews28), note: 'top 10 recent videos' },
-    { label: 'Likes (recent 10)', value: fmt(totalLikes28) },
-    { label: 'Comments (recent 10)', value: fmt(totalComments28) },
-    { label: 'Engagement rate', value: `${engRate}%`, note: '(likes+comments)/views' },
+// ══════════════════════════════════════════════════════
+//  Analytics load
+// ══════════════════════════════════════════════════════
+async function loadAnalytics() {
+  if(!isOwner)return
+  $('spinner').style.display='block'
+  try {
+    const [daily,impressions,traffic,devices,countries,topVideos]=await Promise.all([
+      fetchDailyMetrics(state.start,state.end),
+      fetchImpressions(state.start,state.end),
+      fetchTrafficSources(state.start,state.end),
+      fetchDevices(state.start,state.end),
+      fetchCountries(state.start,state.end),
+      fetchTopVideosAnalytics(state.start,state.end),
+    ])
+    renderSnapshot(daily,impressions)
+    renderFunnel(daily,impressions)
+    renderDailyCharts(daily)
+    renderTrafficSources(traffic)
+    renderDevices(devices)
+    renderCountries(countries)
+    renderRetention(daily)
+    renderTopVideos(topVideos)
+  }catch(e){
+    $('error-banner').textContent=`Analytics error: ${e.message}`; $('error-banner').style.display='block'
+  }finally{$('spinner').style.display='none'}
+}
+
+// ══════════════════════════════════════════════════════
+//  Render: Channel overview
+// ══════════════════════════════════════════════════════
+function renderChannelOverview(ch) {
+  $('channel-cards').innerHTML=[
+    {l:'Subscribers',v:fmt(ch.subscribers)},
+    {l:'Total views',v:fmt(ch.totalViews)},
+    {l:'Videos published',v:ch.videoCount},
+  ].map(c=>`<div class="card"><div class="m-lbl">${c.l}</div><div class="m-val">${c.v}</div></div>`).join('')
+}
+
+// ══════════════════════════════════════════════════════
+//  Render: Upload cadence
+// ══════════════════════════════════════════════════════
+function renderUploadCadence(videos) {
+  // Build monthly counts for last 12 months
+  const now=new Date(), months=[]
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1)
+    months.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,label:d.toLocaleDateString([],{month:'short',year:'2-digit'}),count:0})
+  }
+  videos.forEach(v=>{
+    const mk=v.publishedAt?.slice(0,7)
+    const m=months.find(x=>x.key===mk)
+    if(m)m.count++
+  })
+  mc('cadence','chart-cadence',{
+    type:'bar',
+    data:{labels:months.map(m=>m.label),datasets:[{data:months.map(m=>m.count),backgroundColor:months.map(m=>m.count>0?'#2563eb':'#e3e6f0'),borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},color:'#94a3b8'},grid:{display:false}},y:{ticks:{font:{size:10},color:'#94a3b8',stepSize:1},grid:{color:'#e3e6f0'}}}}
+  })
+
+  const totalLast12=months.reduce((s,m)=>s+m.count,0)
+  const avgPerMonth=(totalLast12/12).toFixed(1)
+  const daysSinceLast=videos.length?Math.round((Date.now()-new Date(videos.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt))[0].publishedAt))/86400000):null
+  const lastTitle=videos.length?videos.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt))[0].title:''
+
+  $('upload-stats').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><div class="m-lbl">Videos last 12 months</div><div class="m-val">${totalLast12}</div></div>
+      <div><div class="m-lbl">Avg uploads per month</div><div class="m-val">${avgPerMonth}</div></div>
+      <div><div class="m-lbl">Days since last upload</div><div class="m-val ${daysSinceLast>14?'dn':daysSinceLast>7?'fl':'up'}">${daysSinceLast??'—'}</div></div>
+      <div style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${lastTitle}">Latest: ${lastTitle}</div>
+    </div>`
+}
+
+// ══════════════════════════════════════════════════════
+//  Render: Recent videos table
+// ══════════════════════════════════════════════════════
+function renderRecentVideos(videos) {
+  const sorted=[...videos].sort((a,b)=>b.views-a.views)
+  $('videos-body').innerHTML=sorted.slice(0,15).map((v,i)=>`
+    <tr class="tr-hover">
+      <td style="color:var(--hint);font-size:11px">${i+1}</td>
+      <td style="max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        <a href="https://youtube.com/watch?v=${v.id}" target="_blank" style="color:var(--text);text-decoration:none">${v.title}</a>
+      </td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(v.views)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(v.likes)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(v.comments)}</td>
+      <td style="text-align:right;color:var(--muted);font-size:12px">${v.publishedAt?.slice(0,10)||'—'}</td>
+    </tr>`).join('')
+}
+
+// ══════════════════════════════════════════════════════
+//  Render: Period snapshot cards
+// ══════════════════════════════════════════════════════
+function sum(rows,k){return rows.reduce((s,r)=>s+(r[k]||0),0)}
+function avg(rows,k){return rows.length?sum(rows,k)/rows.length:0}
+
+function renderSnapshot(daily,impressions) {
+  const views=sum(daily,'views')
+  const watchMin=sum(daily,'estimatedMinutesWatched')
+  const subGain=sum(daily,'subscribersGained')
+  const subLost=sum(daily,'subscribersLost')
+  const likes=sum(daily,'likes')
+  const comments=sum(daily,'comments')
+  const shares=sum(daily,'shares')
+  const avgDur=avg(daily,'averageViewDuration')
+  const avgPct=avg(daily,'averageViewPercentage')
+  const engRate=views>0?((likes+comments)/views*100).toFixed(1):'—'
+  const net=subGain-subLost
+
+  const imp=impressions?.[0]?.impressions
+  const ctr=impressions?.[0]?.impressionBasedClickThroughRate
+
+  const cards=[
+    {l:'Views',v:fmt(views),n:`${daily.length} days`},
+    {l:'Watch hours',v:fmtH(watchMin),n:'estimated'},
+    {l:'Net subscribers',v:(net>=0?'+':'')+fmt(net),n:`+${fmt(subGain)} / −${fmt(subLost)}`,cls:net>=0?'up':'dn'},
+    imp?{l:'Impressions',v:fmt(imp),n:'times thumbnail shown'}:{l:'Likes',v:fmt(likes),n:'period total'},
+    ctr?{l:'Click-through rate',v:fmtPct(ctr),n:'impressions → clicks'}:{l:'Comments',v:fmt(comments),n:'period total'},
+    {l:'Avg view duration',v:fmtDur(avgDur),n:`${avgPct.toFixed(0)}% retained`},
+    {l:'Engagement rate',v:`${engRate}%`,n:'(likes+cmts)/views'},
+    {l:'Shares',v:fmt(shares),n:'period total'},
   ]
 
-  $('yt-cards').innerHTML = cards.map(c => `
+  $('snapshot-cards').innerHTML=cards.map(c=>`
     <div class="card">
-      <div class="metric-lbl">${c.label}</div>
-      <div class="metric-val">${c.value}</div>
-      ${c.note ? `<div class="metric-delta fl">${c.note}</div>` : ''}
+      <div class="m-lbl">${c.l}</div>
+      <div class="m-val ${c.cls||''}">${c.v}</div>
+      <div class="m-note">${c.n||''}</div>
+    </div>`).join('')
+}
+
+// ══════════════════════════════════════════════════════
+//  Render: Impressions funnel
+// ══════════════════════════════════════════════════════
+function renderFunnel(daily,impressions) {
+  const views=sum(daily,'views')
+  const imp=impressions?.[0]?.impressions
+  const ctr=impressions?.[0]?.impressionBasedClickThroughRate
+  const watchH=sum(daily,'estimatedMinutesWatched')/60
+
+  if(!imp){$('funnel-card').style.display='none';return}
+  $('funnel-card').style.display='block'
+
+  $('funnel-wrap').innerHTML=`
+    <div class="funnel-step">
+      <div class="funnel-lbl">Impressions</div>
+      <div class="funnel-val">${fmt(imp)}</div>
+      <div class="funnel-sub">thumbnails shown</div>
     </div>
-  `).join('')
+    <div class="funnel-arrow">→</div>
+    <div class="funnel-step">
+      <div class="funnel-lbl">CTR</div>
+      <div class="funnel-val">${fmtPct(ctr)}</div>
+      <div class="funnel-sub">clicked through</div>
+    </div>
+    <div class="funnel-arrow">→</div>
+    <div class="funnel-step">
+      <div class="funnel-lbl">Views</div>
+      <div class="funnel-val">${fmt(views)}</div>
+      <div class="funnel-sub">total views</div>
+    </div>
+    <div class="funnel-arrow">→</div>
+    <div class="funnel-step" style="background:var(--green-lt)">
+      <div class="funnel-lbl" style="color:var(--green)">Watch hours</div>
+      <div class="funnel-val" style="color:var(--green)">${fmtH(watchH*60)}</div>
+      <div class="funnel-sub" style="color:var(--green)">hours watched</div>
+    </div>`
+}
 
-  // Top videos table
-  $('top-videos-body').innerHTML = sorted.slice(0,5).map((v,i) => `
-    <tr>
-      <td style="color:var(--hint);font-size:11px;">${i+1}</td>
-      <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.title}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums;">${fmt(v.views)}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums;">${fmt(v.likes)}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums;">${fmt(v.comments)}</td>
-    </tr>
-  `).join('')
+// ══════════════════════════════════════════════════════
+//  Render: Daily charts
+// ══════════════════════════════════════════════════════
+function renderDailyCharts(daily) {
+  const labels=daily.map(r=>r.day?.slice(5))
+  const views=daily.map(r=>r.views||0)
+  const hrs=daily.map(r=>Math.round((r.estimatedMinutesWatched||0)/60))
 
-  // Views chart — use top 10 videos sorted by publish date as trend proxy
-  const chartData = [...videos]
-    .sort((a,b) => a.publishedAt?.localeCompare(b.publishedAt))
-    .slice(-14)
-    .map(v => ({ label: v.title.slice(0,18)+'…', views: v.views }))
+  mc('views','chart-views',{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Views',data:views,backgroundColor:'#2563eb',borderRadius:3,borderSkipped:false,yAxisID:'y'},
+      {label:'Watch hrs',data:hrs,type:'line',borderColor:'#059669',backgroundColor:'transparent',pointRadius:2,tension:0.3,yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:10},color:'#94a3b8',maxTicksLimit:14},grid:{display:false}},
+        y:{position:'left',ticks:{font:{size:10},color:'#94a3b8',callback:v=>fmt(v)},grid:{color:'#e3e6f0'}},
+        y2:{position:'right',ticks:{font:{size:10},color:'#059669',callback:v=>v+'h'},grid:{display:false}}}}
+  })
 
-  destroyChart(chartViews)
-  chartViews = new Chart($('chart-views'), {
-    type: 'bar',
-    data: {
-      labels: chartData.map(d => d.label),
-      datasets: [{
-        label: 'Views',
-        data: chartData.map(d => d.views),
-        backgroundColor: '#2563eb',
-        borderRadius: 4,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} views` } } },
-      scales: {
-        x: { ticks: { font: { size: 10 }, color: '#94a3b8', maxRotation: 40 }, grid: { display: false } },
-        y: { ticks: { font: { size: 10 }, color: '#94a3b8', callback: v => fmt(v) }, grid: { color: '#e3e6f0' } }
-      }
-    }
+  mc('subs','chart-subs',{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Gained',data:daily.map(r=>r.subscribersGained||0),backgroundColor:'#059669',borderRadius:2,borderSkipped:false},
+      {label:'Lost',data:daily.map(r=>-(r.subscribersLost||0)),backgroundColor:'#dc2626',borderRadius:2,borderSkipped:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false}},
+      scales:{x:{stacked:true,ticks:{font:{size:9},color:'#94a3b8',maxTicksLimit:10},grid:{display:false}},
+        y:{stacked:true,ticks:{font:{size:10},color:'#94a3b8'},grid:{color:'#e3e6f0'}}}}
+  })
+
+  mc('engage','chart-engage',{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Likes',data:daily.map(r=>r.likes||0),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',fill:true,tension:0.3,pointRadius:2},
+      {label:'Comments',data:daily.map(r=>r.comments||0),borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.1)',fill:true,tension:0.3,pointRadius:2},
+      {label:'Shares',data:daily.map(r=>r.shares||0),borderColor:'#059669',backgroundColor:'rgba(5,150,105,.1)',fill:true,tension:0.3,pointRadius:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9},color:'#94a3b8',maxTicksLimit:10},grid:{display:false}},
+        y:{ticks:{font:{size:10},color:'#94a3b8'},grid:{color:'#e3e6f0'}}}}
   })
 }
 
-// ─── Render SEO (mock) ────────────────────────────────────────
-function renderSeo() {
-  const seo = {
-    domainAuthority: 62, daDelta: '+2 pts',
-    backlinks: 214, blDelta: '+34 new',
-    organicSessions: 28400, osDelta: '+9%',
-    avgRank: 14.2, rankDelta: '+1.8 pos',
-    serpFeatures: 18, sfDelta: '+4 new',
-    serpCtr: '3.1%', ctrDelta: '+0.5 pts',
-    keywords: [
-      { kw: 'CI/CD pipeline tutorial', rank: 4,  d: +2 },
-      { kw: 'Harness deploy',          rank: 7,  d: +5 },
-      { kw: 'DevOps platform',         rank: 11, d: +1 },
-      { kw: 'feature flags SaaS',      rank: 13, d: 0  },
-      { kw: 'software delivery',       rank: 19, d: -2 },
-      { kw: 'chaos engineering',       rank: 22, d: +8 },
-    ],
-    serpBreakdown: [
-      { type: 'Video carousel',   n: 8 },
-      { type: 'Featured snippet', n: 5 },
-      { type: 'Knowledge panel',  n: 3 },
-      { type: 'PAA',              n: 2 },
-    ]
-  }
-
-  $('seo-cards').innerHTML = [
-    { label: 'Domain authority', value: seo.domainAuthority, delta: seo.daDelta, cls: 'up' },
-    { label: 'Backlinks from video', value: fmt(seo.backlinks), delta: seo.blDelta, cls: 'up' },
-    { label: 'Organic sessions', value: fmt(seo.organicSessions), delta: seo.osDelta, cls: 'up' },
-    { label: 'Avg keyword rank', value: `#${seo.avgRank}`, delta: seo.rankDelta, cls: 'up' },
-    { label: 'Video SERP features', value: seo.serpFeatures, delta: seo.sfDelta, cls: 'up' },
-    { label: 'SERP CTR', value: seo.serpCtr, delta: seo.ctrDelta, cls: 'up' },
-  ].map(c => `<div class="card"><div class="metric-lbl">${c.label}</div><div class="metric-val">${c.value}</div><div class="metric-delta ${c.cls}">↑ ${c.delta}</div></div>`).join('')
-
-  $('kw-list').innerHTML = seo.keywords.map(k => `
-    <div class="kw-row">
-      <span class="kw-name">${k.kw}</span>
-      <span class="kw-rank">#${k.rank}</span>
-      <span class="kw-chg ${k.d>0?'up':k.d<0?'dn':'fl'}">${k.d>0?'↑'+k.d:k.d<0?'↓'+Math.abs(k.d):'→'}</span>
-    </div>
-  `).join('')
-
-  destroyChart(chartSerp)
-  chartSerp = new Chart($('chart-serp'), {
-    type: 'doughnut',
-    data: {
-      labels: seo.serpBreakdown.map(f => f.type),
-      datasets: [{ data: seo.serpBreakdown.map(f => f.n), backgroundColor: COLORS, borderWidth: 0, hoverOffset: 4 }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } } }
-  })
-
-  $('serp-legend').innerHTML = seo.serpBreakdown.map((f,i) => `
-    <span><span class="legend-sq" style="background:${COLORS[i]}"></span>${f.type} (${f.n})</span>
-  `).join('')
+// ══════════════════════════════════════════════════════
+//  Render: Traffic sources
+// ══════════════════════════════════════════════════════
+function renderTrafficSources(traffic) {
+  if(!traffic.length){$('traffic-bars').innerHTML='<div style="color:var(--hint);font-size:13px;padding:8px 0">No data for this period</div>';return}
+  const total=traffic.reduce((s,r)=>s+(r.views||0),0)
+  const top=traffic.slice(0,8)
+  $('traffic-bars').innerHTML=top.map((r,i)=>{
+    const label=TRAFFIC_LABELS[r.insightTrafficSourceType]||r.insightTrafficSourceType
+    const pct=total>0?Math.round((r.views/total)*100):0
+    return `<div class="bar-row">
+      <div class="bar-lbl" title="${label}">${label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <div class="bar-val">${pct}%</div>
+    </div>`
+  }).join('')
 }
 
-// ─── Render GEO (mock) ────────────────────────────────────────
-function renderGeo() {
-  const geo = {
-    mentionShare: '7.4%', msDelta: '+1.2 pts',
-    citations: 38, citDelta: '+11 new',
-    queries: 126, qDelta: '+18%',
-    sentiment: '88%',
-    scores: [
-      { label: 'Content cited by AI', score: 74, color: '#2563eb' },
-      { label: 'Topical authority',   score: 68, color: '#059669' },
-      { label: 'Entity recognition',  score: 61, color: '#7c3aed' },
-      { label: 'Structured data',     score: 55, color: '#b45309' },
-      { label: 'E-E-A-T signals',     score: 80, color: '#059669' },
-    ],
-    platforms: [
-      { name: 'ChatGPT',    n: 14 },
-      { name: 'Perplexity', n: 11 },
-      { name: 'Gemini',     n: 7  },
-      { name: 'Copilot',    n: 4  },
-      { name: 'Claude',     n: 2  },
-    ],
-    aiQueries: [
-      { q: 'Best CI/CD tools 2025',        p: 'Perplexity', pos: 1, t: 'up',   v: true     },
-      { q: 'How to set up feature flags',  p: 'ChatGPT',    pos: 2, t: 'up',   v: true     },
-      { q: 'DevOps platform comparison',   p: 'Gemini',     pos: 3, t: 'flat', v: 'partial'},
-      { q: 'Chaos engineering tutorial',   p: 'Perplexity', pos: 2, t: 'up',   v: true     },
-      { q: 'Software delivery automation', p: 'Claude',     pos: 4, t: 'down', v: false    },
-      { q: 'Harness vs Jenkins',           p: 'ChatGPT',    pos: 1, t: 'up',   v: true     },
-    ]
-  }
-
-  $('geo-cards').innerHTML = [
-    { label: 'AI mention share', value: geo.mentionShare, delta: geo.msDelta, cls: 'up' },
-    { label: 'LLM citations',    value: geo.citations,    delta: geo.citDelta, cls: 'up' },
-    { label: 'Queries answered', value: geo.queries,      delta: geo.qDelta,   cls: 'up' },
-    { label: 'Brand sentiment',  value: geo.sentiment,    delta: 'positive tone', cls: 'fl' },
-  ].map(c => `<div class="card"><div class="metric-lbl">${c.label}</div><div class="metric-val">${c.value}</div><div class="metric-delta ${c.cls}">${c.cls==='up'?'↑':''} ${c.delta}</div></div>`).join('')
-
-  $('geo-scores').innerHTML = geo.scores.map(s => `
-    <div class="score-row">
-      <span class="score-name">${s.label}</span>
-      <div class="score-track"><div class="score-fill" style="width:${s.score}%;background:${s.color}"></div></div>
-      <span class="score-num">${s.score}</span>
-    </div>
-  `).join('')
-
-  destroyChart(chartGeo)
-  chartGeo = new Chart($('chart-geo'), {
-    type: 'bar',
-    data: {
-      labels: geo.platforms.map(p => p.name),
-      datasets: [{
-        label: 'Citations',
-        data: geo.platforms.map(p => p.n),
-        backgroundColor: COLORS,
-        borderRadius: 4,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { font: { size: 11 }, color: '#94a3b8' }, grid: { display: false } },
-        y: { ticks: { font: { size: 11 }, color: '#94a3b8', stepSize: 5 }, grid: { color: '#e3e6f0' } }
-      }
-    }
+// ══════════════════════════════════════════════════════
+//  Render: Devices
+// ══════════════════════════════════════════════════════
+function renderDevices(devices) {
+  if(!devices.length)return
+  const labels=devices.map(d=>DEVICE_LABELS[d.deviceType]||d.deviceType)
+  const data=devices.map(d=>d.views||0)
+  mc('devices','chart-devices',{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:COLORS,borderWidth:2,borderColor:COLORS.map(()=>'#fff'),hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const t=data.reduce((s,v)=>s+v,0);return ` ${c.label}: ${fmt(c.raw)} (${t>0?Math.round(c.raw/t*100):0}%)`}}}}}
   })
-
-  $('geo-queries').innerHTML = geo.aiQueries.map(q => `
-    <tr>
-      <td>${q.q}</td>
-      <td style="color:var(--muted)">${q.p}</td>
-      <td style="font-weight:500">#${q.pos}</td>
-      <td class="${q.t==='up'?'up':q.t==='down'?'dn':'fl'}">${q.t==='up'?'↑':q.t==='down'?'↓':'→'}</td>
-      <td>${q.v===true?'<span class="pill pill-g">Yes</span>':q.v==='partial'?'<span class="pill pill-a">Partial</span>':'<span class="pill pill-r">No</span>'}</td>
-    </tr>
-  `).join('')
+  $('device-legend').innerHTML=labels.map((l,i)=>`<span><span class="lsq" style="background:${COLORS[i]}"></span>${l}</span>`).join('')
 }
 
-// ─── Init ─────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  // Pre-baked credentials
-  localStorage.setItem('yt_api_key', 'AIzaSyBgtYmNGkKnNlqSCaeEnLO6387WFEE4qHs')
-  localStorage.setItem('yt_channel_id', 'UCSs-WCBvdDdBi5QPX95B_Mw')
+// ══════════════════════════════════════════════════════
+//  Render: Countries
+// ══════════════════════════════════════════════════════
+function renderCountries(countries) {
+  if(!countries.length){$('geo-bars').innerHTML='<div style="color:var(--hint);font-size:13px;padding:8px 0">No geographic data for this period</div>';return}
+  const total=countries.reduce((s,r)=>s+(r.views||0),0)
+  $('geo-bars').innerHTML=countries.slice(0,10).map((r,i)=>{
+    const pct=total>0?Math.round((r.views/total)*100):0
+    return `<div class="bar-row">
+      <div class="bar-lbl">${r.country}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <div class="bar-val">${pct}%</div>
+    </div>`
+  }).join('')
+}
 
-  $('setup').style.display = 'none'
-  $('dashboard').style.display = 'block'
-  loadData()
+// ══════════════════════════════════════════════════════
+//  Render: Retention trend
+// ══════════════════════════════════════════════════════
+function renderRetention(daily) {
+  const labels=daily.map(r=>r.day?.slice(5))
+  const dur=daily.map(r=>r.averageViewDuration||0)
+  const pct=daily.map(r=>r.averageViewPercentage||0)
+  mc('retention','chart-retention',{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Avg duration (s)',data:dur,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',fill:true,tension:0.3,pointRadius:2,yAxisID:'y'},
+      {label:'Retention %',data:pct,borderColor:'#059669',backgroundColor:'transparent',tension:0.3,pointRadius:2,yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label.includes('%')?` ${c.raw.toFixed(1)}% retained`:` ${fmtDur(c.raw)} avg`}}},
+      scales:{x:{ticks:{font:{size:9},color:'#94a3b8',maxTicksLimit:12},grid:{display:false}},
+        y:{position:'left',ticks:{font:{size:10},color:'#94a3b8',callback:v=>fmtDur(v)},grid:{color:'#e3e6f0'}},
+        y2:{position:'right',ticks:{font:{size:10},color:'#059669',callback:v=>v.toFixed(0)+'%'},grid:{display:false}}}}
+  })
+}
+
+// ══════════════════════════════════════════════════════
+//  Render: Top videos
+// ══════════════════════════════════════════════════════
+function renderTopVideos(videos) {
+  if(!videos.length){$('top-videos-body').innerHTML='<tr><td colspan="8" style="color:var(--hint);text-align:center;padding:20px">No video data for this period</td></tr>';return}
+  $('top-videos-body').innerHTML=videos.map((v,i)=>`
+    <tr class="tr-hover">
+      <td style="color:var(--hint);font-size:11px">${i+1}</td>
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        <a href="https://youtube.com/watch?v=${v.video}" target="_blank" style="color:var(--text);text-decoration:none">${v.title}</a>
+      </td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(v.views)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmtH(v.estimatedMinutesWatched)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmtDur(v.averageViewDuration)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(v.likes)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${fmt(v.comments)}</td>
+      <td style="text-align:right;color:var(--muted);font-size:12px">${v.publishedAt?.slice(0,10)||'—'}</td>
+    </tr>`).join('')
+}
+
+// ══════════════════════════════════════════════════════
+//  Init
+// ══════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  syncUI()
+  const t=localStorage.getItem('yt_access_token'), e=parseInt(localStorage.getItem('yt_token_expiry')||'0')
+  if(t&&e>Date.now()){accessToken=t;tokenExpiry=e;fetchOwnerInfo().then(activateOwner)}
+  loadPublicData()
 })
 </script>
 </body>
